@@ -16,7 +16,7 @@ The portal was built by Claude for personal Fable use case testing and to derive
 
 i have not yet verified the security of the code, though i intend to get to that as soon as i can. 
 
-*upcoming adjustments*: will most likely swap the sections around so the two makware portions are next to each other for improved UX, as erll as any other little useful changes.
+*upcoming adjustments*: will most likely swap the sections around so the two malware portions are next to each other for improved UX, as well as any other little useful changes.
 
 bring your own api key, feel free to dig through. Feedback welcome.
 
