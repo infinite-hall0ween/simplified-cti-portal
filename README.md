@@ -5,6 +5,8 @@ For faster research
 
 i have not yet verified the security of the code, though i intend to get to that as soon as i can. 
 
+*note^2* will most likely swap the sections areound so the two makware sections are next to each other for improve UX
+
 bring your own api key, feel free to dig through. Feedback welcome.
 
 
