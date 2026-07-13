@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OTX Intel Portal</title>
+<style>
+  :root{
+    --bg:#0d1117;
+    --panel:#141b24;
+    --panel-2:#1a2330;
+    --line:#26313f;
+    --ink:#d6dde6;
+    --ink-dim:#7d8b9c;
+    --amber:#e8a33d;
+    --cyan:#4fc3d9;
+    --red:#e05252;
+    --mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+    --sans:'Segoe UI',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh}
+  header{border-bottom:1px solid var(--line);padding:18px 28px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  header h1{font-family:var(--mono);font-size:1.05rem;letter-spacing:.12em;color:var(--amber);font-weight:600}
+  header .sub{font-family:var(--mono);font-size:.72rem;color:var(--ink-dim);letter-spacing:.08em}
+  .wrap{max-width:1180px;margin:0 auto;padding:26px 28px 60px}
+
+  /* key bar */
+  .keybar{display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:8px;flex-wrap:wrap}
+  .keybar label{font-family:var(--mono);font-size:.72rem;color:var(--ink-dim);letter-spacing:.08em;white-space:nowrap}
+  .keybar input{flex:1;min-width:220px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:.8rem;padding:8px 10px}
+  .keybar input:focus{outline:2px solid var(--cyan);outline-offset:1px}
+  .keybar .status{font-family:var(--mono);font-size:.72rem}
+  .keybar .status.ok{color:var(--cyan)}
+  .keybar .status.none{color:var(--ink-dim)}
+  .keynote{font-family:var(--mono);font-size:.68rem;color:var(--ink-dim);margin-bottom:26px;padding-left:2px}
+
+  h2{font-family:var(--mono);font-size:.78rem;letter-spacing:.18em;color:var(--ink-dim);text-transform:uppercase;margin:30px 0 14px;display:flex;align-items:center;gap:10px}
+  h2::after{content:"";flex:1;height:1px;background:var(--line)}
+  h2 .tick{color:var(--amber)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 14px 12px;cursor:pointer;text-align:left;color:var(--ink);transition:border-color .15s,background .15s;position:relative}
+  .box:hover,.box:focus-visible{border-color:var(--amber);background:var(--panel-2)}
+  .box:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  .box.active{border-color:var(--cyan)}
+  .box .name{font-family:var(--mono);font-size:.85rem;font-weight:600;display:block;margin-bottom:4px}
+  .box .hint{font-size:.7rem;color:var(--ink-dim);font-family:var(--mono)}
+  .box.apt .name{color:var(--cyan)}
+  .box.mal .name{color:var(--amber)}
+  .box.sec .name{color:#8fce6b}
+
+  /* virustotal panel */
+  .vtpanel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px}
+  .vtrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  .vtrow input[type=text]{flex:1;min-width:260px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:.8rem;padding:9px 10px}
+  .vtrow input[type=text]:focus{outline:2px solid var(--cyan);outline-offset:1px}
+  .vtrow input[type=file]{font-family:var(--mono);font-size:.72rem;color:var(--ink-dim)}
+  .vtbtn{background:var(--panel-2);border:1px solid var(--amber);color:var(--amber);font-family:var(--mono);font-size:.75rem;letter-spacing:.05em;border-radius:4px;padding:9px 16px;cursor:pointer}
+  .vtbtn:hover,.vtbtn:focus-visible{background:var(--amber);color:var(--bg)}
+  .vtbtn.alt{border-color:var(--cyan);color:var(--cyan)}
+  .vtbtn.alt:hover,.vtbtn.alt:focus-visible{background:var(--cyan);color:var(--bg)}
+  .vtnote{font-family:var(--mono);font-size:.66rem;color:var(--ink-dim);margin:2px 0 0}
+  .verdict{display:flex;gap:0;border-radius:4px;overflow:hidden;height:10px;margin:10px 0 6px;border:1px solid var(--line)}
+  .verdict span{display:block;height:100%}
+  .v-mal{background:var(--red)} .v-sus{background:var(--amber)} .v-clean{background:#4a7d4a} .v-und{background:var(--line)}
+  .vstats{font-family:var(--mono);font-size:.72rem;color:var(--ink-dim);display:flex;gap:16px;flex-wrap:wrap}
+  .vstats .bad{color:var(--red)} .vstats .warn{color:var(--amber)} .vstats .ok{color:#8fce6b}
+
+  /* results */
+  #results{margin-top:34px}
+  .res-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .res-head .q{font-family:var(--mono);font-size:.85rem;color:var(--cyan)}
+  .res-head .count{font-family:var(--mono);font-size:.72rem;color:var(--ink-dim)}
+  .pulse{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:4px;padding:14px 16px;margin-bottom:10px}
+  .pulse a{color:var(--ink);text-decoration:none;font-weight:600;font-size:.92rem}
+  .pulse a:hover{color:var(--amber);text-decoration:underline}
+  .pulse .meta{font-family:var(--mono);font-size:.7rem;color:var(--ink-dim);margin-top:6px;display:flex;gap:16px;flex-wrap:wrap}
+  .pulse .tags{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+  .tag{font-family:var(--mono);font-size:.65rem;color:var(--cyan);border:1px solid var(--line);border-radius:3px;padding:2px 6px}
+  .msg{font-family:var(--mono);font-size:.8rem;color:var(--ink-dim);padding:20px;border:1px dashed var(--line);border-radius:6px;text-align:center}
+  .msg.err{color:var(--red);border-color:var(--red)}
+  .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:8px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>OTX INTEL P<img src="images/48915-on-off-pumpkin.gif" 
+     alt="On Off Pumpkin Emoji" 
+     style="height: 1.2em; width: auto; vertical-align: middle; display: inline-block;">RTAL</h1>
+  <span class="sub">AlienVault pulse triage: malware typology &amp; APT geography
+  </span>
+</header>
+
+<div class="wrap">
+  <div class="keybar">
+    <label for="apikey">OTX API KEY</label>
+    <input id="apikey" type="password" placeholder="paste key — held in memory only, never stored or committed" autocomplete="off">
+    <span id="keystatus" class="status none">no key loaded</span>
+  </div>
+  <div class="keybar">
+    <label for="vtkey">VT API KEY</label>
+    <input id="vtkey" type="password" placeholder="VirusTotal key — memory only, same rules" autocomplete="off">
+    <span id="vtkeystatus" class="status none">no key loaded</span>
+    <span id="vtquota" class="status none">quota used this session: 0 / 500 day · 0 / 4 min</span>
+  </div>
+  <p class="keynote">Keys live in JS variables for this tab session only. Nothing is written to localStorage, cookies, or this file <img src="images/718781-orangesparklies.gif" 
+     alt="Orange Sparklies Emoji" 
+     style="height: 1.2em; width: auto; vertical-align: middle; display: inline-block;"> VT free tier: 4 lookups/min, 500/day — the counter above tracks this session only.</p>
+
+  <h2><span class="tick">▸</span> Malware by type <img src="images/9698-coffee-addict-skeleton.png" 
+       alt="Coffee Addict Skeleton Emoji" 
+       style="height: 1.2em; width: auto; vertical-align: middle; display: inline-block;"></h2>
+  <div class="grid" id="malGrid"></div>
+
+  <h2><span class="tick">▸</span> APT by geolocation <img src="images/20593-moon.png" 
+     alt="Moon Emoji" 
+     style="height: 1.2em; width: auto; vertical-align: middle; display: inline-block;">
+  </h2>
+  <div class="grid" id="aptGrid"></div>
+
+  <h2><span class="tick">▸</span> Malware by targeted sector <img src="images/63022-beautifulcandle.png" 
+     alt="Beautiful Candle Emoji" 
+     style="height: 1.2em; width: auto; vertical-align: middle; display: inline-block;">
+  </h2>
+  <div class="grid" id="secGrid"></div>
+
+  <h2><span class="tick">▸</span> VirusTotal — threat hunting &amp; enrichment</h2>
+  <div class="vtpanel">
+    <div class="vtrow">
+      <input id="vtioc" type="text" placeholder="hash (MD5/SHA1/SHA256), IPv4, domain, or URL — type auto-detected" autocomplete="off" spellcheck="false">
+      <button class="vtbtn" id="vtLookupBtn">Check reputation</button>
+    </div>
+    <div class="vtrow">
+      <input id="vtfile" type="file">
+      <button class="vtbtn" id="vtUploadBtn">Upload for analysis</button>
+      <button class="vtbtn alt" id="vtYaraBtn">List YARA rulesets</button>
+    </div>
+    <p class="vtnote">Upload sends the file to VirusTotal for static + sandbox analysis (max 32 MB via this endpoint; results are public on free tier — never upload sensitive files). YARA Livehunt requires a VT Enterprise key; free keys will get a 403 here.</p>
+  </div>
+
+  <div id="results"></div>
+</div>
+
+<script>
+const MALWARE = [
+  ["Ransomware","ransomware"],
+  ["Infostealer","infostealer"],
+  ["RAT","remote access trojan"],
+  ["Loader","malware loader"],
+  ["Botnet","botnet"],
+  ["Wiper","wiper malware"],
+  ["Banking Trojan","banking trojan"],
+  ["Backdoor","backdoor"],
+  ["Rootkit","rootkit"],
+  ["Cryptominer","cryptominer"],
+];
+
+const APT = [
+  ["DPRK","Lazarus"],
+  ["Russia","APT28"],
+  ["Russia (SVR)","APT29"],
+  ["China","APT41"],
+  ["China (MSS)","Mustang Panda"],
+  ["Iran","APT33"],
+  ["Iran (MOIS)","MuddyWater"],
+  ["Vietnam","APT32"],
+  ["India","Sidewinder"],
+  ["Pakistan","Transparent Tribe"],
+];
+
+const SECTORS = [
+  ["Financial","financial sector malware"],
+  ["Banking","banking sector"],
+  ["Healthcare","healthcare sector"],
+  ["Energy","energy sector"],
+  ["Government","government sector"],
+  ["Defense","defense industrial base"],
+  ["Telecom","telecommunications sector"],
+  ["Manufacturing","manufacturing sector"],
+  ["Education","education sector"],
+  ["Retail","retail sector"],
+  ["Aviation","aviation sector"],
+  ["Critical Infra","critical infrastructure"],
+];
+
+const $ = s => document.querySelector(s);
+let apiKey = "";
+
+$("#apikey").addEventListener("input", e => {
+  apiKey = e.target.value.trim();
+  const st = $("#keystatus");
+  if (apiKey) { st.textContent = "key loaded (memory only)"; st.className = "status ok"; }
+  else { st.textContent = "no key loaded"; st.className = "status none"; }
+});
+
+function buildGrid(id, items, cls, hint) {
+  const grid = $(id);
+  items.forEach(([label, query]) => {
+    const b = document.createElement("button");
+    b.className = "box " + cls;
+    b.innerHTML = `<span class="name">${label}</span><span class="hint">${hint}: ${query}</span>`;
+    b.addEventListener("click", () => runSearch(label, query, b));
+    grid.appendChild(b);
+  });
+}
+buildGrid("#malGrid", MALWARE, "mal", "q");
+buildGrid("#aptGrid", APT, "apt", "adversary");
+buildGrid("#secGrid", SECTORS, "sec", "sector");
+
+async function runSearch(label, query, btn) {
+  document.querySelectorAll(".box.active").forEach(x => x.classList.remove("active"));
+  btn.classList.add("active");
+  const res = $("#results");
+
+  if (!apiKey) {
+    res.innerHTML = `<div class="msg err">No API key loaded. Paste your OTX key above — get one free at otx.alienvault.com (Settings → API Integration).</div>`;
+    return;
+  }
+
+  res.innerHTML = `<div class="msg"><span class="spinner"></span>querying OTX for “${label}”…</div>`;
+
+  const url = `https://otx.alienvault.com/api/v1/search/pulses?q=${encodeURIComponent(query)}&sort=-modified&limit=15`;
+  try {
+    const r = await fetch(url, { headers: { "X-OTX-API-KEY": apiKey } });
+    if (r.status === 403 || r.status === 401) throw new Error("Auth failed — check your API key.");
+    if (!r.ok) throw new Error(`OTX returned HTTP ${r.status}`);
+    const data = await r.json();
+    render(label, query, data.results || []);
+  } catch (err) {
+    res.innerHTML = `<div class="msg err">${err.message}<br><br>If this is a CORS block (common when opening the file directly), serve it via a local web server or GitHub Pages, or route through a small proxy.</div>`;
+  }
+}
+
+function render(label, query, pulses) {
+  const res = $("#results");
+  if (!pulses.length) {
+    res.innerHTML = `<div class="msg">No pulses returned for “${query}”.</div>`;
+    return;
+  }
+  const head = `<div class="res-head"><span class="q">▸ ${label} — latest pulses</span><span class="count">${pulses.length} results, sorted by modified</span></div>`;
+  const cards = pulses.map(p => {
+    const tags = (p.tags || []).slice(0, 8).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("");
+    return `<div class="pulse">
+      <a href="https://otx.alienvault.com/pulse/${p.id}" target="_blank" rel="noopener">${escapeHtml(p.name)}</a>
+      <div class="meta">
+        <span>modified: ${(p.modified || "").slice(0,10)}</span>
+        <span>indicators: ${p.indicator_count ?? "?"}</span>
+        <span>author: ${escapeHtml(p.author_name || "unknown")}</span>
+        ${p.adversary ? `<span>adversary: ${escapeHtml(p.adversary)}</span>` : ""}
+      </div>
+      <div class="tags">${tags}</div>
+    </div>`;
+  }).join("");
+  res.innerHTML = head + cards;
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+/* ============ VirusTotal ============ */
+let vtKey = "";
+let vtDayCount = 0;
+let vtMinTimestamps = []; // rolling 60s window
+
+$("#vtkey").addEventListener("input", e => {
+  vtKey = e.target.value.trim();
+  const st = $("#vtkeystatus");
+  if (vtKey) { st.textContent = "key loaded (memory only)"; st.className = "status ok"; }
+  else { st.textContent = "no key loaded"; st.className = "status none"; }
+});
+
+function vtQuotaCheck() {
+  const now = Date.now();
+  vtMinTimestamps = vtMinTimestamps.filter(t => now - t < 60000);
+  if (vtDayCount >= 500) return "Daily free-tier limit (500) reached this session.";
+  if (vtMinTimestamps.length >= 4) return "Rate limit: 4 requests/min on the free tier. Wait ~" + Math.ceil((60000 - (now - vtMinTimestamps[0]))/1000) + "s.";
+  return null;
+}
+function vtQuotaTick() {
+  vtDayCount++;
+  vtMinTimestamps.push(Date.now());
+  $("#vtquota").textContent = `quota used this session: ${vtDayCount} / 500 day · ${vtMinTimestamps.length} / 4 min`;
+  $("#vtquota").className = vtDayCount > 450 || vtMinTimestamps.length >= 4 ? "status" : "status ok";
+  if (vtDayCount > 450) $("#vtquota").style.color = "var(--red)";
+}
+
+function detectIocType(v) {
+  if (/^[a-fA-F0-9]{32}$/.test(v) || /^[a-fA-F0-9]{40}$/.test(v) || /^[a-fA-F0-9]{64}$/.test(v)) return "hash";
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(v)) return "ip";
+  if (/^https?:\/\//i.test(v) || v.includes("/")) return "url";
+  if (/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(v)) return "domain";
+  return null;
+}
+
+async function vtFetch(path, opts = {}) {
+  const quotaMsg = vtQuotaCheck();
+  if (quotaMsg) throw new Error(quotaMsg);
+  vtQuotaTick();
+  const r = await fetch("https://www.virustotal.com/api/v3/" + path, {
+    ...opts,
+    headers: { "x-apikey": vtKey, ...(opts.headers || {}) }
+  });
+  if (r.status === 401) throw new Error("Auth failed — check your VT API key.");
+  if (r.status === 403) throw new Error("403 Forbidden — this endpoint likely requires a VT Enterprise (premium) key.");
+  if (r.status === 429) throw new Error("429 — VT rate limit hit (server-side). Slow down or wait for quota reset.");
+  if (r.status === 404) throw new Error("Not found in VirusTotal — this IOC has never been submitted. Consider uploading/submitting it.");
+  if (!r.ok) throw new Error("VT returned HTTP " + r.status);
+  return r.json();
+}
+
+$("#vtLookupBtn").addEventListener("click", async () => {
+  const res = $("#results");
+  const raw = $("#vtioc").value.trim();
+  if (!vtKey) { res.innerHTML = `<div class="msg err">No VT key loaded. Get one free at virustotal.com (profile → API key).</div>`; return; }
+  if (!raw) { res.innerHTML = `<div class="msg err">Enter a hash, IP, domain, or URL.</div>`; return; }
+  const type = detectIocType(raw);
+  if (!type) { res.innerHTML = `<div class="msg err">Couldn't classify that IOC. Expected MD5/SHA1/SHA256, IPv4, domain, or URL.</div>`; return; }
+
+  res.innerHTML = `<div class="msg"><span class="spinner"></span>querying VirusTotal (${type})…</div>`;
+  try {
+    let path, guiLink;
+    if (type === "hash")   { path = "files/" + raw; guiLink = "https://www.virustotal.com/gui/file/" + raw; }
+    if (type === "ip")     { path = "ip_addresses/" + raw; guiLink = "https://www.virustotal.com/gui/ip-address/" + raw; }
+    if (type === "domain") { path = "domains/" + raw; guiLink = "https://www.virustotal.com/gui/domain/" + raw; }
+    if (type === "url") {
+      const id = btoa(raw).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+      path = "urls/" + id; guiLink = "https://www.virustotal.com/gui/url/" + id;
+    }
+    const data = await vtFetch(path);
+    renderVtReport(raw, type, data.data.attributes, guiLink);
+  } catch (err) {
+    res.innerHTML = `<div class="msg err">${escapeHtml(err.message)}<br><br>Note: VT's API may block direct browser calls (CORS) depending on hosting. If lookups consistently fail from GitHub Pages, a small proxy (e.g. Cloudflare Worker holding no key — key still passed per-request) fixes it.</div>`;
+  }
+});
+
+function renderVtReport(ioc, type, a, guiLink) {
+  const s = a.last_analysis_stats || {};
+  const mal = s.malicious||0, sus = s.suspicious||0, clean = s.harmless||0, und = s.undetected||0;
+  const total = mal+sus+clean+und || 1;
+  const pct = n => (n/total*100).toFixed(1) + "%";
+
+  const hits = Object.entries(a.last_analysis_results || {})
+    .filter(([,v]) => v.category === "malicious" || v.category === "suspicious")
+    .slice(0, 12)
+    .map(([vendor,v]) => `<span class="tag" style="border-color:var(--red);color:var(--red)">${escapeHtml(vendor)}: ${escapeHtml(v.result||v.category)}</span>`)
+    .join("");
+
+  const extra = [];
+  if (a.meaningful_name) extra.push("name: " + escapeHtml(a.meaningful_name));
+  if (a.type_description) extra.push("type: " + escapeHtml(a.type_description));
+  if (a.size) extra.push("size: " + a.size.toLocaleString() + " B");
+  if (a.country) extra.push("country: " + escapeHtml(a.country));
+  if (a.as_owner) extra.push("ASN: " + escapeHtml(a.as_owner));
+  if (a.reputation !== undefined) extra.push("reputation: " + a.reputation);
+  if (a.last_analysis_date) extra.push("last scan: " + new Date(a.last_analysis_date*1000).toISOString().slice(0,10));
+
+  $("#results").innerHTML = `
+    <div class="res-head"><span class="q">▸ VT verdict — ${escapeHtml(ioc)}</span><span class="count">${type} · ${total} engines</span></div>
+    <div class="pulse" style="border-left-color:${mal>0?'var(--red)':'#4a7d4a'}">
+      <a href="${guiLink}" target="_blank" rel="noopener">Open full report on VirusTotal ↗</a>
+      <div class="verdict">
+        <span class="v-mal" style="width:${pct(mal)}"></span>
+        <span class="v-sus" style="width:${pct(sus)}"></span>
+        <span class="v-clean" style="width:${pct(clean)}"></span>
+        <span class="v-und" style="width:${pct(und)}"></span>
+      </div>
+      <div class="vstats">
+        <span class="bad">malicious: ${mal}</span>
+        <span class="warn">suspicious: ${sus}</span>
+        <span class="ok">harmless: ${clean}</span>
+        <span>undetected: ${und}</span>
+      </div>
+      <div class="meta">${extra.map(x=>`<span>${x}</span>`).join("")}</div>
+      ${hits ? `<div class="tags" style="margin-top:10px">${hits}</div>` : ""}
+    </div>`;
+}
+
+$("#vtUploadBtn").addEventListener("click", async () => {
+  const res = $("#results");
+  const f = $("#vtfile").files[0];
+  if (!vtKey) { res.innerHTML = `<div class="msg err">No VT key loaded.</div>`; return; }
+  if (!f) { res.innerHTML = `<div class="msg err">Choose a file first.</div>`; return; }
+  if (f.size > 32*1024*1024) { res.innerHTML = `<div class="msg err">File exceeds 32 MB — the large-file upload flow needs the /files/upload_url endpoint.</div>`; return; }
+
+  res.innerHTML = `<div class="msg"><span class="spinner"></span>uploading ${escapeHtml(f.name)} to VirusTotal…</div>`;
+  try {
+    const fd = new FormData();
+    fd.append("file", f);
+    const data = await vtFetch("files", { method: "POST", body: fd });
+    const analysisId = data.data.id;
+    res.innerHTML = `<div class="msg">Uploaded. Analysis queued — ID <span style="color:var(--cyan)">${escapeHtml(analysisId)}</span>.<br><br>
+      <a style="color:var(--amber)" href="https://www.virustotal.com/gui/home/upload" target="_blank" rel="noopener">Track on VT ↗</a> — or re-run a hash lookup on the file's SHA256 in ~2–5 min for the verdict.</div>`;
+  } catch (err) {
+    res.innerHTML = `<div class="msg err">${escapeHtml(err.message)}</div>`;
+  }
+});
+
+$("#vtYaraBtn").addEventListener("click", async () => {
+  const res = $("#results");
+  if (!vtKey) { res.innerHTML = `<div class="msg err">No VT key loaded.</div>`; return; }
+  res.innerHTML = `<div class="msg"><span class="spinner"></span>fetching Livehunt rulesets…</div>`;
+  try {
+    const data = await vtFetch("intelligence/hunting_rulesets?limit=20");
+    const rules = data.data || [];
+    if (!rules.length) { res.innerHTML = `<div class="msg">No Livehunt rulesets on this account yet.</div>`; return; }
+    res.innerHTML = `<div class="res-head"><span class="q">▸ YARA Livehunt rulesets</span><span class="count">${rules.length}</span></div>` +
+      rules.map(r => `<div class="pulse">
+        <a href="https://www.virustotal.com/gui/hunting/rulesets/${r.id}" target="_blank" rel="noopener">${escapeHtml(r.attributes.name)}</a>
+        <div class="meta">
+          <span>enabled: ${r.attributes.enabled}</span>
+          <span>modified: ${new Date((r.attributes.modification_date||0)*1000).toISOString().slice(0,10)}</span>
+        </div></div>`).join("");
+  } catch (err) {
+    res.innerHTML = `<div class="msg err">${escapeHtml(err.message)}</div>`;
+  }
+});
+</script>
+</body>
+</html>
