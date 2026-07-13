@@ -22,4 +22,4 @@ bring your own api key, feel free to dig through. Feedback welcome.
 
 
 URL:
-https://infinite-hall0ween.github.io/simplified-alienvault-portal/
+https://infinite-hall0ween.github.io/simplified-otx-portal/
